@@ -7,7 +7,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const NAV = [
+type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/rooms", label: "Rooms", icon: BedDouble },
   { to: "/admin/bookings", label: "Bookings", icon: CalendarRange },
@@ -18,7 +19,7 @@ const NAV = [
   { to: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
   { to: "/admin/profile", label: "Profile", icon: UserCog },
   { to: "/admin/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 export function AdminLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
