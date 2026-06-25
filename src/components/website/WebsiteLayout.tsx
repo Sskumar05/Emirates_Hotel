@@ -13,7 +13,7 @@ const NAV = [
   { to: "/contact", label: "Contact" },
 ] as const;
 
-export function WebsiteLayout() {
+export function WebsiteLayout({ children }: { children?: ReactNode } = {}) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
@@ -60,7 +60,7 @@ export function WebsiteLayout() {
         </AnimatePresence>
       </header>
 
-      <main className="flex-1"><Outlet /></main>
+      <main className="flex-1">{children ?? <Outlet />}</main>
 
       <footer className="border-t border-border bg-surface mt-24">
         <div className="container-luxe py-16 grid md:grid-cols-4 gap-10">
