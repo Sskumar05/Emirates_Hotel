@@ -73,7 +73,7 @@ export function WebsiteLayout() {
           <div>
             <h4 className="text-xs uppercase tracking-[0.25em] text-gold mb-4">Explore</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              {NAV.slice(1).map((n) => <li key={n.to}><Link to={n.to} className="hover:text-gold transition-colors">{n.label}</Link></li>)}
+              {NAV.slice(1).map((n) => <li key={n.to}><Link to={n.to as "."} className="hover:text-gold transition-colors">{n.label}</Link></li>)}
             </ul>
           </div>
           <div>
