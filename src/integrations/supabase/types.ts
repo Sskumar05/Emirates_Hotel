@@ -296,43 +296,52 @@ export type Database = {
       rooms: {
         Row: {
           amenities: string[]
+          bed_type: string | null
           category: Database["public"]["Enums"]["room_category"]
           created_at: string
           description: string | null
+          floor: string | null
           hotel_id: string
           id: string
           images: string[]
           max_guests: number
           price_per_night: number
           room_number: string
+          room_type: string | null
           status: Database["public"]["Enums"]["room_status"]
           updated_at: string
         }
         Insert: {
           amenities?: string[]
+          bed_type?: string | null
           category: Database["public"]["Enums"]["room_category"]
           created_at?: string
           description?: string | null
+          floor?: string | null
           hotel_id: string
           id?: string
           images?: string[]
           max_guests?: number
           price_per_night?: number
           room_number: string
+          room_type?: string | null
           status?: Database["public"]["Enums"]["room_status"]
           updated_at?: string
         }
         Update: {
           amenities?: string[]
+          bed_type?: string | null
           category?: Database["public"]["Enums"]["room_category"]
           created_at?: string
           description?: string | null
+          floor?: string | null
           hotel_id?: string
           id?: string
           images?: string[]
           max_guests?: number
           price_per_night?: number
           room_number?: string
+          room_type?: string | null
           status?: Database["public"]["Enums"]["room_status"]
           updated_at?: string
         }

@@ -1,7 +1,7 @@
-import { createFileRoute, Outlet, useRouterState, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/admin")({
   component: AdminShell,
@@ -10,17 +10,29 @@ export const Route = createFileRoute("/admin")({
 function AdminShell() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { session, isAdmin, loading } = useAuth();
-
-  // Login page is public — render Outlet without layout
-  if (path === "/admin/login") return <Outlet />;
+  const navigate = useNavigate();
+  // Safety valve: if loading is still true after 8s, treat as unauthenticated
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    if (!loading && !session) {
-      window.location.href = "/admin/login";
-    }
-  }, [loading, session]);
+    if (!loading) { setTimedOut(false); return; }
+    const t = setTimeout(() => {
+      console.warn("[AdminShell] Auth loading timed out — treating as unauthenticated");
+      setTimedOut(true);
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading…</div>;
+  useEffect(() => {
+    const isUnauthenticated = (!loading || timedOut) && !session;
+    if (isUnauthenticated && path !== "/admin/login") {
+      navigate({ to: "/admin/login", replace: true });
+    }
+  }, [loading, timedOut, session, path, navigate]);
+
+  if (path === "/admin/login") return <Outlet />;
+
+  if (loading && !timedOut) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading…</div>;
   if (!session) return null;
   if (!isAdmin) return (
     <div className="min-h-screen flex items-center justify-center bg-background text-center p-6">

@@ -1,8 +1,7 @@
 export const CATEGORY_LABELS: Record<string, string> = {
-  ac_double: "AC Double Bed",
-  ac_four: "AC Four Bed",
-  non_ac_double: "Non-AC Double Bed",
-  ac_triple: "AC Triple Bed",
+  ac_double: "Deluxe",
+  ac_triple: "Triple",
+  ac_four: "Four Bed",
 };
 
 export const AMENITY_LABELS: Record<string, string> = {

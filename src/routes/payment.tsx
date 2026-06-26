@@ -22,8 +22,8 @@ function Payment() {
     queryFn: async () => (await supabase.from("bookings").select("*, hotels(name), customers(*)").eq("id", bookingId!).maybeSingle()).data,
   });
 
-  if (!bookingId) return <WebsiteLayout><div className="container-luxe py-32 text-center">Invalid payment session.</div></WebsiteLayout>;
-  if (!booking) return <WebsiteLayout><div className="container-luxe py-32 text-center text-muted-foreground">Loading…</div></WebsiteLayout>;
+  if (!bookingId) return <WebsiteLayout><div className="container-luxe py-32 text-center font-medium">Invalid payment session.</div></WebsiteLayout>;
+  if (!booking) return <WebsiteLayout><div className="container-luxe py-32 text-center text-muted-foreground font-medium">Loading…</div></WebsiteLayout>;
 
   async function payNow() {
     // Razorpay-ready stub. Wire Razorpay key + verification when keys provided.
@@ -46,30 +46,32 @@ function Payment() {
     <WebsiteLayout>
       <div className="container-luxe pt-28 pb-20 max-w-2xl">
         <div className="text-center mb-10">
-          <Lock className="h-8 w-8 text-gold mx-auto mb-4" />
-          <h1 className="font-display text-4xl">Secure Payment</h1>
-          <p className="text-sm text-muted-foreground mt-2">Powered by Razorpay (integration-ready)</p>
+          <div className="h-16 w-16 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="font-bold text-4xl text-foreground tracking-tight">Secure Payment</h1>
+          <p className="text-sm font-medium text-muted-foreground mt-3">Powered by Razorpay (integration-ready)</p>
         </div>
-        <div className="bg-card border border-border p-8">
-          <div className="flex justify-between mb-6">
+        <div className="bg-card shadow-sm border border-border p-8 rounded-lg">
+          <div className="flex justify-between mb-8">
             <div>
-              <div className="text-xs uppercase tracking-[0.3em] text-gold">{(booking as any).hotels?.name}</div>
-              <div className="text-sm text-muted-foreground mt-1">Booking {booking.booking_code}</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-gold">{(booking as any).hotels?.name}</div>
+              <div className="text-sm font-medium text-foreground mt-2">Booking {booking.booking_code}</div>
             </div>
             <div className="text-right">
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Amount Due</div>
-              <div className="font-display text-3xl text-gold">{formatINR(booking.total_amount)}</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Amount Due</div>
+              <div className="font-bold text-3xl text-primary">{formatINR(booking.total_amount)}</div>
             </div>
           </div>
-          <div className="border border-dashed border-border p-6 mb-6 text-center text-sm text-muted-foreground">
-            <CreditCard className="h-6 w-6 mx-auto text-gold mb-2" />
+          <div className="bg-background border border-dashed border-border rounded-md p-6 mb-8 text-center text-sm font-medium text-muted-foreground">
+            <CreditCard className="h-6 w-6 mx-auto text-primary mb-3" />
             Razorpay checkout will open here once API keys are configured. For now, click below to simulate a successful payment.
           </div>
-          <button onClick={payNow} className="w-full gradient-gold text-primary-foreground py-4 text-xs uppercase tracking-[0.3em] hover:brightness-110 transition">
+          <button onClick={payNow} className="w-full bg-gold text-white font-semibold py-4 text-sm rounded-md shadow-md hover:bg-gold-hover transition">
             Pay {formatINR(booking.total_amount)} Securely
           </button>
-          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
-            <ShieldCheck className="h-3 w-3" /> 256-bit SSL secured
+          <div className="flex items-center justify-center gap-2 mt-6 text-xs font-semibold text-muted-foreground">
+            <ShieldCheck className="h-4 w-4 text-primary" /> 256-bit SSL secured
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { WebsiteLayout } from "@/components/website/WebsiteLayout";
 import { motion } from "framer-motion";
-import { Wifi, Car, Droplet, Camera, Tv, ChefHat, Wine, Sparkles, MapPin, Star, ArrowRight, Crown } from "lucide-react";
+import { Wifi, Car, Droplet, Camera, Tv, ChefHat, Wine, Sparkles, MapPin, Star, ArrowRight, Building } from "lucide-react";
 import heroImg from "@/assets/hero-hotel.jpg";
 
 export const Route = createFileRoute("/")({
@@ -35,26 +35,26 @@ function Home() {
   return (
     <WebsiteLayout>
       {/* Hero */}
-      <section className="relative h-[92vh] min-h-[640px] -mt-20 flex items-center">
+      <section className="relative h-[85vh] min-h-[640px] -mt-20 flex items-center">
         <img src={heroImg} alt="Emirates Inn lobby" className="absolute inset-0 w-full h-full object-cover" width={1920} height={1280} />
         <div className="absolute inset-0" style={{ background: "var(--gradient-hero)" }} />
         <div className="container-luxe relative z-10 pt-20">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="max-w-3xl">
-            <div className="flex items-center gap-2 text-gold mb-6">
-              <Crown className="h-5 w-5" />
-              <span className="text-xs uppercase tracking-[0.4em]">A Curated Collection</span>
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-3xl">
+            <div className="flex items-center gap-2 text-gold mb-6 font-semibold">
+              <Building className="h-5 w-5" />
+              <span className="text-xs uppercase tracking-widest">A Curated Collection</span>
             </div>
-            <h1 className="font-display text-5xl md:text-7xl lg:text-8xl leading-[1.05] mb-6">
-              Where elegance<br /><span className="text-gold italic">finds its home.</span>
+            <h1 className="font-bold text-5xl md:text-7xl lg:text-8xl leading-tight mb-6 text-white tracking-tight">
+              Where elegance<br /><span className="text-gold">finds its home.</span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-xl mb-10 leading-relaxed">
+            <p className="text-lg md:text-xl text-white/80 max-w-xl mb-10 leading-relaxed font-medium">
               Two distinct properties — one shared philosophy of refined hospitality. Discover Emirates Inn & Emirates Grand Inn.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/rooms" className="gradient-gold text-primary-foreground px-8 py-4 text-xs uppercase tracking-[0.3em] inline-flex items-center justify-center gap-2 hover:brightness-110 transition">
+              <Link to="/rooms" className="bg-gold text-white px-8 py-4 text-sm font-semibold rounded-md shadow-md inline-flex items-center justify-center gap-2 hover:bg-gold-hover transition">
                 Reserve Your Stay <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/about" className="border border-gold text-gold px-8 py-4 text-xs uppercase tracking-[0.3em] inline-flex items-center justify-center hover:bg-gold/10 transition">
+              <Link to="/about" className="bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 text-sm font-semibold rounded-md inline-flex items-center justify-center hover:bg-white/20 transition">
                 Our Story
               </Link>
             </div>
@@ -63,27 +63,28 @@ function Home() {
       </section>
 
       {/* Hotel showcase */}
-      <section className="py-24 lg:py-32">
+      <section className="py-24 lg:py-32 bg-background">
         <div className="container-luxe">
           <div className="text-center mb-16">
-            <span className="text-xs uppercase tracking-[0.4em] text-gold">The Collection</span>
-            <h2 className="font-display text-4xl md:text-6xl mt-4">Two Properties. One Standard.</h2>
+            <span className="text-sm font-semibold uppercase tracking-wider text-gold">The Collection</span>
+            <h2 className="font-bold text-4xl md:text-5xl mt-4 text-foreground tracking-tight">Two Properties. One Standard.</h2>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
             {[
               { slug: "emirates-inn", name: "Emirates Inn", tag: "Boutique Refinement", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=80" },
               { slug: "emirates-grand-inn", name: "Emirates Grand Inn", tag: "Flagship Luxury", img: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200&q=80" },
             ].map((h, i) => (
-              <motion.div key={h.slug} initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15, duration: 0.8 }}
-                className="group relative overflow-hidden bg-card border border-border rounded-sm">
-                <div className="aspect-[4/5] overflow-hidden">
-                  <img src={h.img} alt={h.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+              <motion.div key={h.slug} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.6 }}
+                className="group relative overflow-hidden bg-card rounded-lg shadow-card border border-border flex flex-col">
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img src={h.img} alt={h.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <span className="text-xs uppercase tracking-[0.3em] text-gold">{h.tag}</span>
-                  <h3 className="font-display text-4xl mt-2 mb-4">{h.name}</h3>
-                  <Link to="/rooms" className="inline-flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-foreground hover:text-gold transition">
+                <div className="p-8 flex-1 flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-gold mb-2 block">{h.tag}</span>
+                    <h3 className="font-bold text-2xl mb-4 text-foreground">{h.name}</h3>
+                  </div>
+                  <Link to="/rooms" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-gold transition mt-4">
                     Explore Rooms <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -97,15 +98,17 @@ function Home() {
       <section className="py-24 bg-surface border-y border-border">
         <div className="container-luxe">
           <div className="text-center mb-16">
-            <span className="text-xs uppercase tracking-[0.4em] text-gold">Curated Comforts</span>
-            <h2 className="font-display text-4xl md:text-5xl mt-4">Amenities, perfected.</h2>
+            <span className="text-sm font-semibold uppercase tracking-wider text-gold">Curated Comforts</span>
+            <h2 className="font-bold text-4xl md:text-5xl mt-4 text-foreground tracking-tight">Amenities, perfected.</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {AMENITIES.map((a, i) => (
               <motion.div key={a.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
-                className="group p-6 border border-border bg-card text-center hover:border-gold transition-all hover:-translate-y-1">
-                <a.icon className="h-8 w-8 text-gold mx-auto mb-4" />
-                <p className="text-sm">{a.label}</p>
+                className="group p-6 rounded-lg bg-card shadow-sm border border-border text-center hover:shadow-md hover:border-gold/50 transition-all">
+                <div className="bg-primary/5 h-12 w-12 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/10 transition-colors">
+                  <a.icon className="h-6 w-6 text-primary group-hover:text-gold transition-colors" />
+                </div>
+                <p className="text-sm font-medium text-foreground">{a.label}</p>
               </motion.div>
             ))}
           </div>
@@ -113,27 +116,27 @@ function Home() {
       </section>
 
       {/* Gallery preview */}
-      <section className="py-24">
+      <section className="py-24 bg-background">
         <div className="container-luxe">
           <div className="flex items-end justify-between mb-12">
             <div>
-              <span className="text-xs uppercase tracking-[0.4em] text-gold">Moments</span>
-              <h2 className="font-display text-4xl md:text-5xl mt-3">A glimpse inside.</h2>
+              <span className="text-sm font-semibold uppercase tracking-wider text-gold">Moments</span>
+              <h2 className="font-bold text-4xl md:text-5xl mt-3 text-foreground tracking-tight">A glimpse inside.</h2>
             </div>
-            <Link to="/gallery" className="hidden md:inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-gold uppercase tracking-[0.2em]">
+            <Link to="/gallery" className="hidden md:inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-gold transition">
               View Gallery <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               "1571003123894-1f0594d2b5d9", "1611892440504-42a792e24d32", "1590490360182-c33d57733427",
               "1551882547-ff40c63fe5fa", "1631049307264-da0ec9d70304", "1564013799919-ab600027ffc6",
               "1582719478250-c89cae4dc85b", "1578683010236-d716f9a3f461",
             ].map((id, i) => (
               <motion.div key={id} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
-                className={`overflow-hidden ${i === 0 || i === 5 ? "row-span-2 aspect-square md:aspect-[3/4]" : "aspect-square"}`}>
+                className={`overflow-hidden rounded-lg ${i === 0 || i === 5 ? "row-span-2 aspect-square md:aspect-[3/4]" : "aspect-square"}`}>
                 <img src={`https://images.unsplash.com/photo-${id}?w=600&q=80`} alt="" loading="lazy"
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
               </motion.div>
             ))}
           </div>
@@ -141,21 +144,29 @@ function Home() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-24 bg-surface border-y border-border">
+      <section className="py-24 bg-primary text-primary-foreground">
         <div className="container-luxe">
           <div className="text-center mb-16">
-            <span className="text-xs uppercase tracking-[0.4em] text-gold">Voices</span>
-            <h2 className="font-display text-4xl md:text-5xl mt-4">What our guests say.</h2>
+            <span className="text-sm font-semibold uppercase tracking-wider text-gold">Voices</span>
+            <h2 className="font-bold text-4xl md:text-5xl mt-4 tracking-tight">What our guests say.</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {TESTIMONIALS.map((t, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                className="p-8 bg-card border border-border">
-                <div className="flex gap-1 mb-4">
+                className="p-8 bg-card rounded-lg shadow-card text-foreground">
+                <div className="flex gap-1 mb-6">
                   {Array.from({ length: t.rating }).map((_, j) => <Star key={j} className="h-4 w-4 text-gold fill-gold" />)}
                 </div>
-                <p className="text-muted-foreground italic mb-6 leading-relaxed">"{t.text}"</p>
-                <p className="text-sm uppercase tracking-[0.2em] text-gold">— {t.name}</p>
+                <p className="text-muted-foreground mb-6 leading-relaxed">"{t.text}"</p>
+                <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                    {t.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">Verified Guest</p>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -163,12 +174,14 @@ function Home() {
       </section>
 
       {/* CTA */}
-      <section className="py-32">
+      <section className="py-32 bg-surface">
         <div className="container-luxe text-center">
-          <MapPin className="h-8 w-8 text-gold mx-auto mb-6" />
-          <h2 className="font-display text-4xl md:text-6xl mb-6">Your story begins here.</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto mb-10">Reserve your suite and let our team craft an unforgettable stay.</p>
-          <Link to="/rooms" className="gradient-gold text-primary-foreground px-10 py-4 text-xs uppercase tracking-[0.3em] inline-flex items-center gap-2 hover:brightness-110 transition">
+          <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-border">
+            <MapPin className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="font-bold text-4xl md:text-6xl mb-6 text-foreground tracking-tight">Your story begins here.</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto mb-10 text-lg">Reserve your suite and let our team craft an unforgettable stay.</p>
+          <Link to="/rooms" className="bg-gold text-white px-10 py-4 text-sm font-semibold rounded-md shadow-md inline-flex items-center gap-2 hover:bg-gold-hover transition">
             Begin Reservation <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

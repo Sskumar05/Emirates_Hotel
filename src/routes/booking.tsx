@@ -5,9 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { CATEGORY_LABELS, formatINR, isoDate, addDays } from "@/lib/hotel";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, ArrowRight, ArrowLeft } from "lucide-react";
+import { Check, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { sendAdminNotification } from "@/lib/email";
 
 type Search = { roomId?: string };
 
@@ -31,6 +32,7 @@ function Booking() {
   const { roomId } = Route.useSearch();
   const nav = useNavigate();
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     full_name: "", mobile: "", email: "",
     num_guests: 1, num_rooms: 1,
@@ -45,11 +47,11 @@ function Booking() {
 
   if (!roomId) {
     return <WebsiteLayout><div className="container-luxe py-32 text-center">
-      <p className="text-muted-foreground mb-4">No room selected.</p>
-      <button onClick={() => nav({ to: "/rooms" })} className="border border-gold text-gold px-6 py-2 text-xs uppercase tracking-[0.2em]">Browse Rooms</button>
+      <p className="text-muted-foreground font-medium mb-4">No room selected.</p>
+      <button onClick={() => nav({ to: "/rooms" })} className="border border-gold text-gold hover:bg-gold/10 transition px-6 py-2.5 text-sm font-semibold rounded-md">Browse Rooms</button>
     </div></WebsiteLayout>;
   }
-  if (!room) return <WebsiteLayout><div className="container-luxe py-32 text-center text-muted-foreground">Loading…</div></WebsiteLayout>;
+  if (!room) return <WebsiteLayout><div className="container-luxe py-32 text-center text-muted-foreground font-medium">Loading…</div></WebsiteLayout>;
 
   const price = Number(room.price_per_night);
   const total = price * form.num_rooms * form.num_days;
@@ -58,6 +60,7 @@ function Booking() {
   async function submitBooking() {
     const parsed = guestSchema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    setSubmitting(true);
     try {
       const { data: customer, error: cErr } = await supabase.from("customers")
         .upsert({ full_name: form.full_name, mobile: form.mobile, email: form.email }, { onConflict: "mobile" })
@@ -72,9 +75,29 @@ function Booking() {
         status: "pending", payment_status: "pending",
       }).select().single();
       if (bErr) throw bErr;
+
+      // Fire-and-forget admin notification (non-blocking)
+      sendAdminNotification({
+        bookingCode: booking.booking_code,
+        customerName: form.full_name,
+        customerEmail: form.email,
+        customerMobile: form.mobile,
+        hotelName: (room as any).hotels?.name ?? "Emirates Grand Inn",
+        roomType: CATEGORY_LABELS[(room as any).category] ?? (room as any).category,
+        checkIn: form.check_in_date,
+        checkOut: checkout,
+        numGuests: form.num_guests,
+        numRooms: form.num_rooms,
+        numDays: form.num_days,
+        totalAmount: formatINR(total),
+        createdAt: new Date().toLocaleString("en-IN"),
+      }).catch((err) => console.warn("[booking] Admin notification failed:", err));
+
       nav({ to: "/payment", search: { bookingId: booking.id } as any });
     } catch (e: any) {
       toast.error(e.message ?? "Booking failed");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -86,38 +109,38 @@ function Booking() {
         <div className="flex items-center justify-between mb-12">
           {steps.map((s, i) => (
             <div key={s} className="flex-1 flex items-center">
-              <div className={`h-10 w-10 rounded-full flex items-center justify-center text-xs ${step > i + 1 ? "bg-gold text-primary-foreground" : step === i + 1 ? "bg-gold text-primary-foreground" : "border border-border text-muted-foreground"}`}>
-                {step > i + 1 ? <Check className="h-4 w-4" /> : i + 1}
+              <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${step > i + 1 ? "bg-primary text-white" : step === i + 1 ? "bg-primary text-white" : "border border-border text-muted-foreground bg-card"}`}>
+                {step > i + 1 ? <Check className="h-5 w-5" /> : i + 1}
               </div>
               <div className="ml-3 hidden sm:block">
-                <div className={`text-xs uppercase tracking-[0.2em] ${step >= i + 1 ? "text-gold" : "text-muted-foreground"}`}>{s}</div>
+                <div className={`text-xs font-bold uppercase tracking-wider ${step >= i + 1 ? "text-primary" : "text-muted-foreground"}`}>{s}</div>
               </div>
-              {i < steps.length - 1 && <div className={`flex-1 h-px mx-3 ${step > i + 1 ? "bg-gold" : "bg-border"}`} />}
+              {i < steps.length - 1 && <div className={`flex-1 h-1 mx-4 rounded-full ${step > i + 1 ? "bg-primary" : "bg-border"}`} />}
             </div>
           ))}
         </div>
 
-        <motion.div key={step} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border p-8 lg:p-12">
+        <motion.div key={step} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card shadow-card rounded-lg border border-border p-8 lg:p-12">
           {step === 1 && (
             <div>
-              <h2 className="font-display text-3xl mb-6">Review your selection</h2>
-              <div className="grid sm:grid-cols-2 gap-6 mb-8">
-                <img src={(room as any).images?.[0] || "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80"} alt="" className="aspect-[4/3] w-full object-cover" />
-                <div>
-                  <div className="text-xs uppercase tracking-[0.3em] text-gold">{(room as any).hotels?.name}</div>
-                  <h3 className="font-display text-2xl mt-2 mb-4">{CATEGORY_LABELS[room.category]}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{room.description}</p>
-                  <div className="text-gold font-display text-3xl">{formatINR(price)}<span className="text-sm text-muted-foreground ml-2">/night</span></div>
+              <h2 className="font-bold text-3xl mb-8 text-foreground tracking-tight">Review your selection</h2>
+              <div className="grid sm:grid-cols-2 gap-8 mb-10">
+                <img src={(room as any).images?.[0] || "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80"} alt="" className="aspect-[4/3] w-full object-cover rounded-md shadow-sm" />
+                <div className="flex flex-col justify-center">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-gold mb-1">{(room as any).hotels?.name}</div>
+                  <h3 className="font-bold text-2xl mb-4 text-foreground">{CATEGORY_LABELS[room.category]}</h3>
+                  <p className="text-sm text-muted-foreground font-medium mb-6 leading-relaxed">{room.description}</p>
+                  <div className="text-primary font-bold text-3xl">{formatINR(price)}<span className="text-sm text-muted-foreground font-semibold ml-2">/night</span></div>
                 </div>
               </div>
-              <button onClick={() => setStep(2)} className="ml-auto block gradient-gold text-primary-foreground px-8 py-3 text-xs uppercase tracking-[0.3em]">Continue <ArrowRight className="inline h-4 w-4 ml-2" /></button>
+              <button onClick={() => setStep(2)} className="ml-auto flex items-center justify-center gap-2 bg-gold text-white px-8 py-3.5 text-sm font-semibold rounded-md shadow-md hover:bg-gold-hover transition">Continue <ArrowRight className="h-4 w-4" /></button>
             </div>
           )}
 
           {step === 2 && (
             <div>
-              <h2 className="font-display text-3xl mb-6">Guest details</h2>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <h2 className="font-bold text-3xl mb-8 text-foreground tracking-tight">Guest details</h2>
+              <div className="grid sm:grid-cols-2 gap-6">
                 <Field label="Full Name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
                 <Field label="Mobile" value={form.mobile} onChange={(v) => setForm({ ...form, mobile: v })} />
                 <Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
@@ -127,17 +150,17 @@ function Booking() {
                 <Field label="Check-in Date" type="date" value={form.check_in_date} onChange={(v) => setForm({ ...form, check_in_date: v })} />
                 <Field label="Check-in Time" type="time" value={form.check_in_time} onChange={(v) => setForm({ ...form, check_in_time: v })} />
               </div>
-              <div className="flex justify-between mt-8">
-                <button onClick={() => setStep(1)} className="text-sm text-muted-foreground hover:text-gold"><ArrowLeft className="inline h-4 w-4 mr-1" />Back</button>
-                <button onClick={() => setStep(3)} className="gradient-gold text-primary-foreground px-8 py-3 text-xs uppercase tracking-[0.3em]">Continue <ArrowRight className="inline h-4 w-4 ml-2" /></button>
+              <div className="flex justify-between items-center mt-10 pt-6 border-t border-border">
+                <button onClick={() => setStep(1)} className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors flex items-center"><ArrowLeft className="h-4 w-4 mr-2" />Back</button>
+                <button onClick={() => setStep(3)} className="flex items-center justify-center gap-2 bg-gold text-white px-8 py-3.5 text-sm font-semibold rounded-md shadow-md hover:bg-gold-hover transition">Continue <ArrowRight className="h-4 w-4" /></button>
               </div>
             </div>
           )}
 
           {step === 3 && (
             <div>
-              <h2 className="font-display text-3xl mb-6">Booking summary</h2>
-              <dl className="divide-y divide-border">
+              <h2 className="font-bold text-3xl mb-8 text-foreground tracking-tight">Booking summary</h2>
+              <dl className="divide-y divide-border border border-border rounded-md overflow-hidden bg-background">
                 {[
                   ["Hotel", (room as any).hotels?.name],
                   ["Room Category", CATEGORY_LABELS[room.category]],
@@ -148,16 +171,19 @@ function Booking() {
                   ["Nights", String(form.num_days)],
                   ["Price / night", formatINR(price)],
                 ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between py-3"><dt className="text-sm text-muted-foreground">{k}</dt><dd className="text-sm">{v}</dd></div>
+                  <div key={k} className="flex justify-between py-4 px-6"><dt className="text-sm font-semibold text-muted-foreground">{k}</dt><dd className="text-sm font-bold text-foreground">{v}</dd></div>
                 ))}
-                <div className="flex justify-between py-5 bg-gold/5 px-4 -mx-4 mt-4">
-                  <dt className="font-display text-xl text-gold">Total</dt>
-                  <dd className="font-display text-2xl text-gold">{formatINR(total)}</dd>
+                <div className="flex justify-between py-5 bg-primary/5 px-6 items-center">
+                  <dt className="font-bold text-lg text-primary">Total</dt>
+                  <dd className="font-bold text-2xl text-primary">{formatINR(total)}</dd>
                 </div>
               </dl>
-              <div className="flex justify-between mt-8">
-                <button onClick={() => setStep(2)} className="text-sm text-muted-foreground hover:text-gold"><ArrowLeft className="inline h-4 w-4 mr-1" />Back</button>
-                <button onClick={submitBooking} className="gradient-gold text-primary-foreground px-8 py-3 text-xs uppercase tracking-[0.3em]">Proceed to Payment <ArrowRight className="inline h-4 w-4 ml-2" /></button>
+              <div className="flex justify-between items-center mt-10">
+                <button onClick={() => setStep(2)} className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors flex items-center"><ArrowLeft className="h-4 w-4 mr-2" />Back</button>
+                <button disabled={submitting} onClick={submitBooking} className="flex items-center justify-center gap-2 bg-gold text-white px-8 py-3.5 text-sm font-semibold rounded-md shadow-md hover:bg-gold-hover transition disabled:opacity-60 disabled:cursor-not-allowed">
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Proceed to Payment <ArrowRight className="h-4 w-4" />
+                </button>
               </div>
             </div>
           )}
@@ -170,9 +196,9 @@ function Booking() {
 function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
   return (
     <label className="block">
-      <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2 block">{label}</span>
+      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 block">{label}</span>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-background border border-border px-4 py-3 text-sm focus:border-gold focus:outline-none" />
+        className="w-full bg-background border border-border rounded-md px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors" />
     </label>
   );
 }

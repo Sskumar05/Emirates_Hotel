@@ -31,7 +31,14 @@ function AdminLogin() {
         if (data.user) {
           const { count } = await supabase.from("user_roles").select("*", { count: "exact", head: true }).eq("role", "admin");
           if ((count ?? 0) === 0) {
-            await supabase.from("user_roles").insert({ user_id: data.user.id, role: "admin" });
+            const { error: roleErr } = await supabase.from("user_roles").insert({ user_id: data.user.id, role: "admin" });
+            if (roleErr) {
+              console.error("[AdminLogin] Could not insert admin role (RLS may be blocking):", roleErr.message);
+              toast.warning(
+                "Account created, but the admin role could not be assigned automatically. " +
+                "Please run the grant-admin SQL in the Supabase Dashboard."
+              );
+            }
           }
         }
         toast.success("Account created. You can now sign in.");
