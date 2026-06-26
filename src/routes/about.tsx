@@ -12,9 +12,9 @@ function About() {
     <WebsiteLayout>
       <div className="container-luxe pt-32 pb-20 max-w-4xl">
         <div className="text-center mb-16">
-          <div className="h-16 w-16 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6">
+          {/* <div className="h-16 w-16 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6">
             <Building className="h-8 w-8 text-primary" />
-          </div>
+          </div> */}
           <span className="text-sm font-semibold uppercase tracking-wider text-gold">Our Story</span>
           <h1 className="font-bold text-4xl sm:text-5xl md:text-7xl mt-4 text-foreground tracking-tight">Hospitality, refined.</h1>
         </div>

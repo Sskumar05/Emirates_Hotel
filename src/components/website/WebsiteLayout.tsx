@@ -19,7 +19,7 @@ export function WebsiteLayout({ children }: { children?: ReactNode } = {}) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
+      <header className="sticky top-0 z-50 text-white transition-all duration-300" style={{ backgroundColor: "#0A1A2F", borderBottom: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 8px 30px rgba(0,0,0,0.25)" }}>
         <div className="container-luxe flex items-center justify-between h-20">
           <Link to="/" className="flex items-center gap-3 group">
             <div>
@@ -27,14 +27,14 @@ export function WebsiteLayout({ children }: { children?: ReactNode } = {}) {
               <img src={emirates} className="h-15 w-15" />
             </div>
             <div className="leading-tight">
-              <div className="font-bold text-xl text-primary tracking-tight">Emirates Inn</div>
-              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">& Grand Collection</div>
+              <div className="font-bold text-xl tracking-tight text-white">Emirates</div>
+              {/* <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">& Grand Collection</div> */}
             </div>
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             {NAV.map((n) => (
               <Link key={n.to} to={n.to as "."}
-                className={`text-sm font-medium transition-colors ${path === n.to ? "text-primary font-semibold" : "text-foreground hover:text-primary"}`}>
+                className={`text-sm font-medium transition-colors ${path === n.to ? "text-white font-semibold" : "text-primary-foreground/80 hover:text-white"}`}>
                 {n.label}
               </Link>
             ))}
@@ -42,18 +42,18 @@ export function WebsiteLayout({ children }: { children?: ReactNode } = {}) {
               Request Booking
             </Link>
           </nav>
-          <button className="md:hidden text-primary" onClick={() => setOpen(!open)} aria-label="Menu">
+          <button className="md:hidden text-primary-foreground hover:text-white transition-colors" onClick={() => setOpen(!open)} aria-label="Menu">
             {open ? <X /> : <Menu />}
           </button>
         </div>
         <AnimatePresence>
           {open && (
             <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }}
-              className="md:hidden overflow-hidden border-t border-border bg-card">
+              className="md:hidden overflow-hidden" style={{ backgroundColor: "#081524", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="container-luxe py-6 flex flex-col gap-4">
                 {NAV.map((n) => (
                   <Link key={n.to} to={n.to as "."} onClick={() => setOpen(false)}
-                    className={`text-sm font-medium ${path === n.to ? "text-primary" : "text-foreground"}`}>
+                    className={`text-sm font-medium ${path === n.to ? "text-white font-semibold" : "text-primary-foreground/80 hover:text-white"}`}>
                     {n.label}
                   </Link>
                 ))}
