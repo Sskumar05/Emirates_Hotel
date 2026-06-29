@@ -17,21 +17,23 @@ function fmtDate(iso: string): string {
   return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-type Search = { 
+type Search = {
   roomId?: string;
   hotelId?: string;
   checkInDate?: string;
   numDays?: number;
   numGuests?: number;
+  numRooms?: number;
 };
 
 export const Route = createFileRoute("/booking")({
-  validateSearch: (s: Record<string, unknown>): Search => ({ 
+  validateSearch: (s: Record<string, unknown>): Search => ({
     roomId: typeof s.roomId === "string" ? s.roomId : undefined,
     hotelId: typeof s.hotelId === "string" ? s.hotelId : undefined,
     checkInDate: typeof s.checkInDate === "string" ? s.checkInDate : undefined,
     numDays: typeof s.numDays === "number" ? s.numDays : undefined,
     numGuests: typeof s.numGuests === "number" ? s.numGuests : undefined,
+    numRooms: typeof s.numRooms === "number" ? s.numRooms : undefined,
   }),
   component: Booking,
 });
@@ -56,10 +58,10 @@ function Booking() {
   
   const [form, setForm] = useState({
     full_name: "", mobile: "", email: "",
-    num_guests: search.numGuests || 1, 
-    num_rooms: 1,
-    check_in_date: search.checkInDate || isoDate(new Date()), 
-    check_in_time: "14:00", 
+    num_guests: search.numGuests || 1,
+    num_rooms: search.numRooms || 1,
+    check_in_date: search.checkInDate || isoDate(new Date()),
+    check_in_time: "14:00",
     num_days: search.numDays || 1,
   });
 
@@ -86,24 +88,73 @@ function Booking() {
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     setSubmitting(true);
     try {
+      // ── Step 1: upsert customer ────────────────────────────────────────────
       const { data: customerId, error: cErr } = await supabase.rpc("upsert_customer_for_booking", {
         p_full_name: form.full_name,
         p_mobile: form.mobile,
         p_email: form.email,
       });
       if (cErr) throw cErr;
-      const customer = { id: customerId };
-      const { data: booking, error: bErr } = await supabase.from("bookings").insert({
-        customer_id: customer.id, hotel_id: (room as any).hotel_id, category: (room as any).category,
-        num_rooms: form.num_rooms, num_guests: form.num_guests,
-        check_in_date: form.check_in_date, check_in_time: form.check_in_time,
-        num_days: form.num_days, check_out_date: checkout,
-        price_per_night: price, total_amount: total,
-        status: "pending", payment_status: "pending",
-      }).select().single();
+
+      // ── Step 2: find available rooms to assign ────────────────────────────
+      // Get all non-maintenance sibling rooms
+      const { data: siblingRooms, error: srErr } = await supabase
+        .from("rooms")
+        .select("id")
+        .eq("hotel_id", (room as any).hotel_id)
+        .eq("category", (room as any).category)
+        .neq("status", "maintenance");
+      if (srErr) throw srErr;
+
+      // Get overlapping active bookings to know which rooms are already taken
+      const { data: overlapping, error: ovErr } = await supabase
+        .from("bookings")
+        .select("assigned_room_ids")
+        .eq("hotel_id", (room as any).hotel_id)
+        .eq("category", (room as any).category)
+        .in("status", ["pending", "confirmed", "checked_in"])
+        .lt("check_in_date", checkout)
+        .gt("check_out_date", form.check_in_date);
+      if (ovErr) throw ovErr;
+
+      const bookedIds = new Set<string>(
+        (overlapping ?? []).flatMap((b: any) => b.assigned_room_ids ?? []),
+      );
+      const available = (siblingRooms ?? []).filter((r: any) => !bookedIds.has(r.id));
+
+      if (available.length < form.num_rooms) {
+        throw new Error(
+          `Only ${available.length} room${available.length !== 1 ? "s" : ""} available for these dates. Please adjust your selection.`,
+        );
+      }
+
+      // Pick first N available room IDs
+      const assignedRoomIds = available.slice(0, form.num_rooms).map((r: any) => r.id);
+
+      // ── Step 3: insert booking with room assignments already set ──────────
+      const { data: booking, error: bErr } = await supabase
+        .from("bookings")
+        .insert({
+          customer_id: customerId,
+          hotel_id: (room as any).hotel_id,
+          category: (room as any).category,
+          num_rooms: form.num_rooms,
+          num_guests: form.num_guests,
+          check_in_date: form.check_in_date,
+          check_in_time: form.check_in_time,
+          num_days: form.num_days,
+          check_out_date: checkout,
+          price_per_night: price,
+          total_amount: total,
+          status: "pending",
+          payment_status: "pending",
+          assigned_room_ids: assignedRoomIds,
+        })
+        .select()
+        .single();
       if (bErr) throw bErr;
 
-      // Fire-and-forget admin notification (non-blocking)
+      // ── Step 4: fire-and-forget admin notification ────────────────────────
       sendAdminNotification({
         bookingCode: booking.booking_code,
         customerName: form.full_name,
@@ -215,13 +266,13 @@ function Booking() {
               <dl className="divide-y divide-border border border-border rounded-md overflow-hidden bg-background">
                 {[
                   ["Hotel", (room as any).hotels?.name],
-                  ["Room", room.room_number],
                   ["Room Category", CATEGORY_LABELS[room.category]],
+                  ["Number of Rooms", `${form.num_rooms} Room${form.num_rooms !== 1 ? "s" : ""}`],
                   ["Check-In", `${fmtDate(form.check_in_date)} · ${form.check_in_time}`],
                   ["Check-Out", fmtDate(checkout)],
                   ["Duration", `${form.num_days} ${form.num_days === 1 ? "Night" : "Nights"}`],
                   ["Guests", `${form.num_guests} ${form.num_guests === 1 ? "Guest" : "Guests"}`],
-                  ["Price / night", formatINR(price)],
+                  ["Price / room / night", formatINR(price)],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between py-4 px-4 sm:px-6">
                     <dt className="text-sm font-semibold text-muted-foreground">{k}</dt>
