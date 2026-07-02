@@ -69,12 +69,13 @@ function AdminRooms() {
 
     const map: Record<string, any> = {};
     for (const r of filtered) {
-      const key = `${r.hotel_id}__${r.category}`;
+      const key = `${r.hotel_id}__${r.category}__${r.room_type || "none"}`;
       if (!map[key]) {
         map[key] = {
           hotel_id: r.hotel_id,
           hotel_name: r.hotels?.name ?? "",
           category: r.category,
+          room_type: r.room_type,
           price_per_night: r.price_per_night,
           max_guests: r.max_guests,
           bed_type: r.bed_type ?? "",
@@ -95,13 +96,22 @@ function AdminRooms() {
 
   async function deleteCategory(g: any) {
     const label = CATEGORY_LABELS[g.category as keyof typeof CATEGORY_LABELS] ?? g.category;
-    if (!confirm(`Delete ALL ${g.rooms.length} room(s) in "${label}" for ${g.hotel_name}?\n\nThis cannot be undone.`)) return;
+    const typeLabel = g.room_type ? ` (${g.room_type})` : "";
+    if (!confirm(`Delete ALL ${g.rooms.length} room(s) in "${label}${typeLabel}" for ${g.hotel_name}?\n\nThis cannot be undone.`)) return;
 
-    const { error } = await supabase
+    let query = supabase
       .from("rooms")
       .delete()
       .eq("hotel_id", g.hotel_id)
       .eq("category", g.category);
+      
+    if (g.room_type) {
+      query = query.eq("room_type", g.room_type);
+    } else {
+      query = query.is("room_type", null);
+    }
+
+    const { error } = await query;
 
     if (error) toast.error(error.message);
     else { toast.success("Category deleted"); invalidate(); }
@@ -215,9 +225,16 @@ function AdminRooms() {
                 <tr key={idx} className="hover:bg-muted/30 transition-colors">
                   <td className="py-4 px-6 font-medium">{g.hotel_name}</td>
                   <td className="py-4 px-6">
-                    <span className="font-bold text-primary">
-                      {CATEGORY_LABELS[g.category as keyof typeof CATEGORY_LABELS] ?? g.category}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-bold text-primary">
+                        {CATEGORY_LABELS[g.category as keyof typeof CATEGORY_LABELS] ?? g.category}
+                      </span>
+                      {g.room_type && (
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          {g.room_type}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-4 px-6 font-semibold">{formatINR(g.price_per_night)}</td>
                   <td className="py-4 px-6">

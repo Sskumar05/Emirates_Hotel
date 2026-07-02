@@ -60,18 +60,24 @@ function RoomDetail() {
       (await supabase.from("rooms").select("*, hotels(id, name, slug, address)").eq("id", id).maybeSingle()).data,
   });
 
-  // ── Load all sibling rooms in same hotel + category ───────────────────────
+  // ── Load all sibling rooms in same hotel + category + room_type ───────────
   const { data: siblingRooms = [] } = useQuery({
-    queryKey: ["sibling-rooms", room?.hotel_id, room?.category],
+    queryKey: ["sibling-rooms", room?.hotel_id, room?.category, room?.room_type],
     enabled: !!room,
-    queryFn: async () =>
-      (
-        await supabase
-          .from("rooms")
-          .select("id, status")
-          .eq("hotel_id", room!.hotel_id)
-          .eq("category", room!.category)
-      ).data ?? [],
+    queryFn: async () => {
+      let query = supabase
+        .from("rooms")
+        .select("id, status")
+        .eq("hotel_id", room!.hotel_id)
+        .eq("category", room!.category);
+        
+      if (room!.room_type) {
+        query = query.eq("room_type", room!.room_type);
+      } else {
+        query = query.is("room_type", null);
+      }
+      return (await query).data ?? [];
+    }
   });
 
   // ── Load overlapping active bookings for the selected dates ───────────────
@@ -247,7 +253,7 @@ function RoomDetail() {
             </div>
 
             <h1 className="font-bold text-3xl sm:text-4xl text-foreground mb-6">
-              {CATEGORY_LABELS[room.category] || room.category}
+              {CATEGORY_LABELS[room.category] || room.category} {room.room_type ? `(${room.room_type})` : ""}
             </h1>
             <p className="text-muted-foreground text-lg leading-relaxed mb-8">{room.description}</p>
 

@@ -97,13 +97,21 @@ function Booking() {
       if (cErr) throw cErr;
 
       // ── Step 2: find available rooms to assign ────────────────────────────
-      // Get all non-maintenance sibling rooms
-      const { data: siblingRooms, error: srErr } = await supabase
+      // Get all non-maintenance sibling rooms of the specific room type
+      let srQuery = supabase
         .from("rooms")
         .select("id")
         .eq("hotel_id", (room as any).hotel_id)
         .eq("category", (room as any).category)
         .neq("status", "maintenance");
+        
+      if ((room as any).room_type) {
+        srQuery = srQuery.eq("room_type", (room as any).room_type);
+      } else {
+        srQuery = srQuery.is("room_type", null);
+      }
+      
+      const { data: siblingRooms, error: srErr } = await srQuery;
       if (srErr) throw srErr;
 
       // Get overlapping active bookings to know which rooms are already taken

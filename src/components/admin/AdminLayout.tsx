@@ -16,7 +16,7 @@ const NAV: NavItem[] = [
   { to: "/admin/calendar", label: "Calendar", icon: Calendar },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/invoices", label: "Invoices", icon: FileText },
-  { to: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
+  // { to: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
   { to: "/admin/profile", label: "Profile", icon: UserCog },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];

@@ -97,9 +97,9 @@ export function WebsiteLayout({ children }: { children?: ReactNode } = {}) {
           <div>
             <h4 className="text-sm font-semibold mb-6">Contact</h4>
             <ul className="space-y-4 text-sm text-primary-foreground/70">
-              <li className="flex gap-3 items-center"><Phone className="h-4 w-4 shrink-0" /><span>+91 98765 43210</span></li>
+              <li className="flex gap-3 items-center"><Phone className="h-4 w-4 shrink-0" /><span>+91 73392 26598</span></li>
               <li className="flex gap-3 items-center"><Mail className="h-4 w-4 shrink-0" /><span>reservations@emiratesinn.com</span></li>
-              <li className="flex gap-3 items-start"><MapPin className="h-4 w-4 shrink-0 mt-0.5" /><span>12 Marina Avenue, Dubai</span></li>
+              <li className="flex gap-3 items-start"><MapPin className="h-4 w-4 shrink-0 mt-0.5" /><span>East Coast Rd, Velankanni, <br/>Tamil Nadu 611111 - India</span></li>
             </ul>
           </div>
           <div>

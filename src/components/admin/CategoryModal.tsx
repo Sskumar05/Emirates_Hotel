@@ -123,17 +123,28 @@ export function CategoryModal({ isOpen, onClose, onSuccess, categoryGroup, hotel
         // ── ADD: validate, then insert first room row ──
         if (!form.initial_room_number.trim()) throw new Error("Please enter an initial room number.");
 
-        // Check category doesn't already exist for this hotel
-        const { data: existing } = await supabase
+        const trimmedRoomType = form.room_type ? form.room_type.trim() : null;
+
+        // Check category doesn't already exist for this hotel with the same room type
+        let query = supabase
           .from("rooms")
           .select("id")
           .eq("hotel_id", form.hotel_id)
           .eq("category", form.category)
           .limit(1);
+          
+        if (trimmedRoomType) {
+          query = query.eq("room_type", trimmedRoomType);
+        } else {
+          query = query.is("room_type", null);
+        }
+
+        const { data: existing } = await query;
 
         if (existing && existing.length > 0) {
+          const typeLabel = trimmedRoomType ? ` with room type "${trimmedRoomType}"` : "";
           throw new Error(
-            `A "${CATEGORY_LABELS[form.category as keyof typeof CATEGORY_LABELS]}" category already exists for this hotel. ` +
+            `A "${CATEGORY_LABELS[form.category as keyof typeof CATEGORY_LABELS]}" category${typeLabel} already exists for this hotel. ` +
             "Edit the existing category, or manage its room numbers instead."
           );
         }
@@ -158,7 +169,7 @@ export function CategoryModal({ isOpen, onClose, onSuccess, categoryGroup, hotel
             category: form.category,
             room_number: form.initial_room_number.trim(),
             status: form.initial_status,
-            room_type: form.room_type || null,
+            room_type: trimmedRoomType,
             floor: form.floor || null,
             bed_type: form.bed_type || null,
             max_guests: form.max_guests,

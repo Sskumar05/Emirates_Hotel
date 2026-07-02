@@ -70,20 +70,20 @@ export function ReduceRoomsModal({ isOpen, onClose, onSuccess, booking, roomNumb
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-card text-foreground">
-        <DialogHeader>
+      <DialogContent className="max-w-md bg-card text-foreground max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold">Reduce Rooms</DialogTitle>
           <p className="text-sm text-muted-foreground">
             Select the room(s) you want to release from booking {booking.booking_code}.
           </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-6">
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        <form onSubmit={handleSubmit} className="mt-4 flex flex-col flex-1 min-h-0 gap-6">
+          <div className="flex flex-col flex-1 min-h-0 gap-3">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex-shrink-0">
               Assigned Rooms
             </h4>
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-y-auto pr-2 flex-1">
               {assignedRooms.map((roomId: string) => (
                 <label
                   key={roomId}
@@ -112,7 +112,7 @@ export function ReduceRoomsModal({ isOpen, onClose, onSuccess, booking, roomNumb
             </div>
           </div>
 
-          <div className="bg-surface p-4 rounded-lg border border-border space-y-2 text-sm">
+          <div className="bg-surface p-4 rounded-lg border border-border space-y-2 text-sm flex-shrink-0">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Current Rooms:</span>
               <span className="font-medium">{booking.num_rooms}</span>
@@ -131,7 +131,7 @@ export function ReduceRoomsModal({ isOpen, onClose, onSuccess, booking, roomNumb
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-2 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}

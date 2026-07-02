@@ -58,7 +58,7 @@ function RoomsPage() {
     const map: Record<string, any> = {};
     for (const r of rooms) {
       const hotelId = (r as any).hotel_id ?? (r as any).hotels?.id ?? "";
-      const key = `${hotelId}__${(r as any).category}`;
+      const key = `${hotelId}__${(r as any).category}__${(r as any).room_type || "none"}`;
       if (!map[key]) {
         map[key] = { ...r, _availableCount: 0, _maintenanceCount: 0, _totalCount: 0 };
       }
@@ -227,16 +227,16 @@ function RoomsPage() {
               whileInView="visible"
               viewport={{ once: true, margin: "-40px" }}
               variants={staggerContainer}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+              className="flex flex-wrap justify-center gap-8"
             >
               {filtered.map((r: any) => {
                 const isSoldOut = r._availableCount === 0;
 
                 return (
                   <motion.div
-                    key={`${r.hotel_id ?? ""}_${r.category}`}
+                    key={`${r.hotel_id ?? ""}_${r.category}_${r.room_type || "none"}`}
                     variants={cardVariant}
-                    className="group flex flex-col"
+                    className="group flex flex-col w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.333rem)]"
                     style={{
                       background: "#FFFFFF",
                       border: isSoldOut
@@ -318,7 +318,7 @@ function RoomsPage() {
                             className="font-serif font-bold text-foreground leading-tight"
                             style={{ fontSize: "1.2rem" }}
                           >
-                            {CATEGORY_LABELS[r.category]}
+                            {CATEGORY_LABELS[r.category]} {r.room_type ? `(${r.room_type})` : ""}
                           </h3>
                           <p className="text-xs text-muted-foreground mt-1 font-light">
                             {r._totalCount} room{r._totalCount !== 1 ? "s" : ""} available

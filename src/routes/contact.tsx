@@ -237,7 +237,7 @@ function Contact() {
               >
                 <iframe
                   title="Emirates Inn Location"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14441.785233116812!2d55.1332768078125!3d25.080556200000007!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f6b5358052445%3A0xc3411b4395682855!2sDubai%20Marina%20-%20Dubai%20-%20United%20Arab%20Emirates!5e0!3m2!1sen!2sus!4v1717000000000!5m2!1sen!2sus"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3920.6685509501135!2d79.84175907508738!3d10.682814589460369!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a556ed9108b6577%3A0x4b0fc83d96d10027!2sHotel%20Emirates%20Inn!5e0!3m2!1sen!2sin!4v1782980517011!5m2!1sen!2sin"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -260,11 +260,11 @@ function Contact() {
                 <div className="space-y-4 text-muted-foreground font-light text-sm">
                   <p className="flex items-start gap-3">
                     <MapPin className="text-gold w-5 h-5 shrink-0" />
-                    <span>12 Marina Avenue, Dubai<br />United Arab Emirates</span>
+                    <span>East Coast Rd, Velankanni, Tamil Nadu 611111, India</span>
                   </p>
                   <p className="flex items-center gap-3">
                     <Phone className="text-gold w-5 h-5 shrink-0" />
-                    <span>+91 98765 43210</span>
+                    <span>+91 73392 26598</span>
                   </p>
                   <p className="flex items-center gap-3">
                     <Mail className="text-gold w-5 h-5 shrink-0" />
