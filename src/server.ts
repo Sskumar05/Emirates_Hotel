@@ -46,10 +46,25 @@ export default {
       if (url.pathname === "/health" && request.method === "GET") {
         try {
           const { supabaseAdmin } = await import("./integrations/supabase/client.server");
-          const { error } = await supabaseAdmin.from("rooms").select("id").limit(1);
-          
-          if (error) throw error;
-          
+          const { data, error } = await supabaseAdmin.from("rooms").select("id").limit(1);
+
+          if (error) {
+            console.error("Health check — Supabase error:", error);
+            return new Response(
+              JSON.stringify({
+                status: "unhealthy",
+                database: "disconnected",
+                error: error.message,
+                details: error,
+                timestamp: new Date().toISOString(),
+              }),
+              {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+              }
+            );
+          }
+
           return new Response(
             JSON.stringify({
               status: "healthy",
@@ -61,12 +76,15 @@ export default {
               headers: { "Content-Type": "application/json" },
             }
           );
-        } catch (error) {
-          console.error("Health check failed:", error);
+        } catch (err) {
+          console.error("Health check — unexpected error:", err);
+          const message = err instanceof Error ? err.message : String(err);
           return new Response(
             JSON.stringify({
               status: "unhealthy",
               database: "disconnected",
+              error: message,
+              details: err instanceof Error ? { name: err.name, stack: err.stack } : err,
               timestamp: new Date().toISOString(),
             }),
             {
