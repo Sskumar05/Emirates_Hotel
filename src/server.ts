@@ -40,6 +40,43 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      
+      // Health check endpoint
+      if (url.pathname === "/health" && request.method === "GET") {
+        try {
+          const { supabaseAdmin } = await import("./integrations/supabase/client.server");
+          const { error } = await supabaseAdmin.from("rooms").select("id").limit(1);
+          
+          if (error) throw error;
+          
+          return new Response(
+            JSON.stringify({
+              status: "healthy",
+              database: "connected",
+              timestamp: new Date().toISOString(),
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        } catch (error) {
+          console.error("Health check failed:", error);
+          return new Response(
+            JSON.stringify({
+              status: "unhealthy",
+              database: "disconnected",
+              timestamp: new Date().toISOString(),
+            }),
+            {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
