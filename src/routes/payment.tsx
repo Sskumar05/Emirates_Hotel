@@ -2,9 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { WebsiteLayout } from "@/components/website/WebsiteLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatINR, fmtDateTime, getDurationLabel } from "@/lib/hotel";
+import { formatINR, fmtDateTime, getDurationLabel, CATEGORY_LABELS } from "@/lib/hotel";
 import { Lock, CreditCard, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useSendEmail } from "@/hooks/useSendEmail";
 
 type Search = { bookingId?: string };
 
@@ -16,6 +17,8 @@ export const Route = createFileRoute("/payment")({
 function Payment() {
   const { bookingId } = Route.useSearch();
   const nav = useNavigate();
+  const { sendConfirmation } = useSendEmail();
+
   const { data: booking } = useQuery({
     queryKey: ["booking", bookingId],
     enabled: !!bookingId,
@@ -26,17 +29,56 @@ function Payment() {
   if (!booking) return <WebsiteLayout><div className="container-luxe py-32 text-center text-muted-foreground font-medium">Loading…</div></WebsiteLayout>;
 
   async function payNow() {
-    // Razorpay-ready stub. Wire Razorpay key + verification when keys provided.
     try {
       const payRef = `RZP_${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+      
       const { error } = await supabase.from("bookings").update({
         status: "confirmed", payment_status: "paid", payment_ref: payRef,
       }).eq("id", bookingId!);
       if (error) throw error;
-      await supabase.from("invoices").insert({
+      
+      const { error: invError } = await supabase.from("invoices").insert({
         booking_id: bookingId!, customer_id: (booking as any)?.customer_id,
         amount: (booking as any)?.total_amount ?? 0, status: "paid",
       });
+      if (invError) throw invError;
+
+      const { data: updatedBooking, error: fetchError } = await supabase
+        .from("bookings")
+        .select("*, hotels(name), customers(*)")
+        .eq("id", bookingId!)
+        .maybeSingle();
+      
+      if (fetchError || !updatedBooking) throw fetchError || new Error("Failed to fetch updated booking");
+
+      const customer = (updatedBooking as any).customers;
+      const hotel = (updatedBooking as any).hotels;
+
+      if (customer?.email) {
+        try {
+          await sendConfirmation(customer.email, {
+            customerName: customer.full_name,
+            bookingCode: updatedBooking.booking_code,
+            hotelName: hotel?.name ?? "Emirates Grand Inn",
+            roomType: CATEGORY_LABELS[(updatedBooking as any).category] ?? (updatedBooking as any).category,
+            checkIn: fmtDateTime(updatedBooking.check_in_date, updatedBooking.check_in_time),
+            checkOut: fmtDateTime(updatedBooking.check_out_date, updatedBooking.stay_type === '12_hours' ? (() => {
+                   const d = new Date(`${updatedBooking.check_in_date}T${updatedBooking.check_in_time || "14:00"}:00`);
+                   d.setHours(d.getHours() + 12);
+                   return d.toTimeString().slice(0, 5);
+                })() : '12:00'),
+            durationLabel: getDurationLabel(updatedBooking.num_days, updatedBooking.stay_type),
+            numGuests: updatedBooking.num_guests,
+            numRooms: updatedBooking.num_rooms,
+            totalAmount: formatINR(updatedBooking.total_amount),
+            paymentStatus: updatedBooking.payment_status ?? "paid",
+          });
+        } catch (emailErr) {
+          console.error("Failed to send confirmation email:", emailErr);
+          // Do not throw; allow payment flow to continue
+        }
+      }
+
       toast.success("Payment successful");
       nav({ to: "/confirmation", search: { bookingId } as any });
     } catch (e: any) { toast.error(e.message); }

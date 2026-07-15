@@ -39,9 +39,10 @@ export const Route = createFileRoute("/booking")({
 });
 
 const guestSchema = z.object({
-  full_name: z.string().trim().min(2).max(100),
-  mobile: z.string().trim().min(7).max(20),
-  email: z.string().trim().email().max(255),
+  full_name: z.string().trim().min(2, "Full name is required").max(100),
+  mobile: z.string().trim().regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian mobile number"),
+  whatsapp: z.string().trim().regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian WhatsApp number"),
+  email: z.string().trim().email("Please enter a valid email address").max(255),
   num_guests: z.number().int().min(1).max(20),
   num_rooms: z.number().int().min(1).max(10),
   check_in_date: z.string(),
@@ -57,7 +58,7 @@ function Booking() {
   const [submitting, setSubmitting] = useState(false);
   
   const [form, setForm] = useState({
-    full_name: "", mobile: "", email: "",
+    full_name: "", mobile: "", whatsapp: "", email: "",
     num_guests: search.numGuests || 1,
     num_rooms: search.numRooms || 1,
     check_in_date: search.checkInDate || isoDate(new Date()),
@@ -329,11 +330,21 @@ function Booking() {
               </div>
 
               <div className="grid sm:grid-cols-2 gap-6">
-                <Field label="Full Name *" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
-                <Field label="Mobile Number *" value={form.mobile} onChange={(v) => setForm({ ...form, mobile: v })} />
-                <div className="sm:col-span-2">
-                  <Field label="Email Address *" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
-                </div>
+                <Field label="Full Name *"  value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
+                <Field label="Mobile Number *"  value={form.mobile} onChange={(v) => setForm({ ...form, mobile: v })} />
+                <Field 
+                  label="WhatsApp Number *" 
+                  value={form.whatsapp} 
+                  onChange={(v) => setForm({ ...form, whatsapp: v })} 
+                  // helperText="Booking confirmation, invoice, and hotel updates will be sent to this WhatsApp number."
+                />
+                <Field 
+                  label="Email Address *" 
+                  type="email" 
+                  value={form.email} 
+                  onChange={(v) => setForm({ ...form, email: v })} 
+                  // helperText="Booking confirmation and invoice will also be sent to this email address."
+                />
                 {is12HoursMode && (
                   <>
                     <div className="sm:col-span-1">
@@ -397,12 +408,13 @@ function Booking() {
   );
 }
 
-function Field({ label, value, onChange, type = "text", disabled }: { label: string; value: string; onChange: (v: string) => void; type?: string; disabled?: boolean }) {
+function Field({ label, value, onChange, type = "text", disabled, placeholder, helperText }: { label: string; value: string; onChange: (v: string) => void; type?: string; disabled?: boolean; placeholder?: string; helperText?: string }) {
   return (
     <label className="block">
       <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 block">{label}</span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}
-        className={`w-full bg-background border border-border rounded-md px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors ${disabled ? "opacity-60 cursor-not-allowed bg-muted" : ""}`} />
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} placeholder={placeholder}
+        className={`w-full bg-background border border-border rounded-md px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors placeholder:text-muted-foreground/50 ${disabled ? "opacity-60 cursor-not-allowed bg-muted" : ""}`} />
+      {helperText && <span className="text-xs text-muted-foreground mt-2 block">{helperText}</span>}
     </label>
   );
 }
