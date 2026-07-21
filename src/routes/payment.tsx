@@ -117,6 +117,16 @@ function Payment() {
       const customer = (updatedBooking as any).customers;
       const hotel = (updatedBooking as any).hotels;
       if (customer?.email) {
+        let pdfBase64: string | undefined;
+        try {
+          console.log("[payNow] Generating PDF attachment for email...");
+          const { generateInvoiceBase64 } = await import("@/lib/invoicePdf");
+          pdfBase64 = await generateInvoiceBase64(updatedBooking);
+          console.log("[payNow] PDF attachment generated successfully.");
+        } catch (pdfErr) {
+          console.error("[payNow] Failed to generate PDF attachment:", pdfErr);
+        }
+
         try {
           await sendConfirmation(customer.email, {
             customerName: customer.full_name,
@@ -134,6 +144,7 @@ function Payment() {
             numRooms: updatedBooking.num_rooms,
             totalAmount: formatINR(updatedBooking.total_amount),
             paymentStatus: updatedBooking.payment_status ?? "paid",
+            pdfBase64,
           });
         } catch (emailErr) {
           console.error("[payNow] Failed to send confirmation email (non-fatal):", emailErr);

@@ -198,3 +198,50 @@ export function downloadInvoice(data: any) {
     }, 4000);
   }, 1000);
 }
+
+// ─── Generate base64 PDF silently for email attachment ──────────────────────
+export async function generateInvoiceBase64(data: any): Promise<string> {
+  const html2pdf = (await import("html2pdf.js")).default;
+  return new Promise((resolve, reject) => {
+    try {
+      const html = generateInvoiceHTML(data);
+      const iframe = document.createElement("iframe");
+      iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:none;overflow:hidden";
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc) {
+        throw new Error("Could not create iframe document");
+      }
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      setTimeout(() => {
+        const opt = {
+          margin: 0,
+          filename: 'invoice.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+        };
+        
+        html2pdf()
+          .set(opt)
+          .from(doc.body)
+          .outputPdf('datauristring')
+          .then((dataUri: string) => {
+            if (document.body.contains(iframe)) document.body.removeChild(iframe);
+            const base64 = dataUri.split(',')[1];
+            resolve(base64);
+          })
+          .catch((err: any) => {
+            if (document.body.contains(iframe)) document.body.removeChild(iframe);
+            reject(err);
+          });
+      }, 500);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}

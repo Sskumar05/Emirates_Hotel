@@ -20,6 +20,8 @@ export interface BookingConfirmationPayload {
   durationLabel?: string;
   totalAmount: string;
   paymentStatus: string;
+  /** Base64-encoded PDF — omit if no attachment needed */
+  pdfBase64?: string;
 }
 
 // ─── Invoice Email ───────────────────────────────────────────────────────────

@@ -407,6 +407,9 @@ Deno.serve(async (req) => {
         totalAmount: String(p.totalAmount ?? ""),
         paymentStatus: String(p.paymentStatus ?? "pending"),
       });
+      if (p.pdfBase64 && p.bookingCode) {
+        attachments = [{ filename: `Invoice-${p.bookingCode}.pdf`, content: String(p.pdfBase64) }];
+      }
     } else if (type === "invoice") {
       subject = `Invoice ${p.invoiceNumber} – Emirates Grand Inn`;
       html = invoiceEmailTemplate({
