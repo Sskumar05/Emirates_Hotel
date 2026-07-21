@@ -37,38 +37,78 @@ function Payment() {
       const payRef = `RZP_${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
 
       // ── STEP 1: Update booking — ONE atomic write: status + payment_status + payment_ref ──
-      console.log("[payNow] BEFORE bookings.update — bookingId:", bookingId, "patch:", { status: "confirmed", payment_status: "paid", payment_ref: payRef });
-      const { error } = await supabase.from("bookings").update({
-        status: "confirmed",
-        payment_status: "paid",
-        payment_ref: payRef,
-      }).eq("id", bookingId!);
-      if (error) throw error;
-      console.log("[payNow] AFTER bookings.update — SUCCESS. status=confirmed, payment_status=paid, payment_ref=", payRef);
+      console.log("PAYMENT START — bookingId:", bookingId);
+      console.log("[payNow] BEFORE bookings.update — patch:", { status: "confirmed", payment_status: "paid", payment_ref: payRef });
+
+      const { error, count: rowsUpdated } = await supabase
+        .from("bookings")
+        .update({
+          status: "confirmed",
+          payment_status: "paid",
+          payment_ref: payRef,
+        })
+        .eq("id", bookingId!)
+        .eq("status", "pending")          // only update if still pending (idempotency guard)
+        .select()                          // needed to get count back
+        .then(res => ({ error: res.error, count: res.data?.length ?? 0 }));
+
+      if (error) {
+        // Supabase returned an explicit error (network, constraint, etc.)
+        console.error("[payNow] bookings.update — EXPLICIT ERROR:", error);
+        throw error;
+      }
+
+      if (rowsUpdated === 0) {
+        // RLS silently blocked the update — no rows matched the policy.
+        // This happens when:
+        //   1. The "Public confirm own pending booking" RLS policy is missing.
+        //      FIX: Run supabase/migrations/20260721000000_fix_payment_update_policy.sql
+        //           in your Supabase SQL editor.
+        //   2. The booking is no longer in "pending" status (already confirmed).
+        console.error(
+          "[payNow] bookings.update — 0 ROWS UPDATED. " +
+          "Likely cause: RLS policy 'Public confirm own pending booking' is missing " +
+          "or the booking is not in pending status. " +
+          "Fix: Run migration 20260721000000_fix_payment_update_policy.sql in Supabase SQL editor."
+        );
+        throw new Error(
+          "Payment recorded but booking status could not be updated. " +
+          "Please contact support with your booking ID: " + bookingId
+        );
+      }
+
+      console.log("PAYMENT SUCCESS — UPDATE RESULT: status=confirmed, payment_status=paid, rows updated:", rowsUpdated);
 
       // ── STEP 2: Create invoice record ─────────────────────────────────────────
-      console.log("[payNow] BEFORE invoices.insert — bookingId:", bookingId);
       const { error: invError } = await supabase.from("invoices").insert({
         booking_id: bookingId!, customer_id: (booking as any)?.customer_id,
         amount: (booking as any)?.total_amount ?? 0, status: "paid",
       });
-      if (invError) throw invError;
-      console.log("[payNow] AFTER invoices.insert — SUCCESS");
+      if (invError) {
+        console.error("[payNow] invoices.insert — ERROR:", invError);
+        throw invError;
+      }
+      console.log("[payNow] Invoice record created — SUCCESS");
 
       // ── STEP 3: Fetch the authoritative updated booking from DB ───────────────
-      console.log("[payNow] Fetching updated booking from DB to verify payment_status...");
+      console.log("UPDATING BOOKING — fetching DB state to verify payment_status...");
       const { data: updatedBooking, error: fetchError } = await supabase
         .from("bookings")
         .select("*, hotels(name), customers(*)")
         .eq("id", bookingId!)
         .maybeSingle();
       if (fetchError || !updatedBooking) throw fetchError || new Error("Failed to fetch updated booking");
-      console.log("[payNow] Updated booking from DB — status:", updatedBooking.status, "| payment_status:", updatedBooking.payment_status, "| payment_ref:", updatedBooking.payment_ref);
+      console.log(
+        "UPDATE RESULT — BOOKING ID:", updatedBooking.id,
+        "| status:", updatedBooking.status,
+        "| payment_status:", updatedBooking.payment_status,
+        "| payment_ref:", updatedBooking.payment_ref
+      );
 
       // ── STEP 4: Push the confirmed/paid state into React Query cache ──────────
       // This prevents the confirmation page from reading a stale "pending" snapshot.
       qc.setQueryData(["booking", bookingId], updatedBooking);
-      // Invalidate admin caches so the Admin Dashboard reflects the latest data.
+      // Invalidate admin caches so the Admin Dashboard reflects the latest data immediately.
       qc.invalidateQueries({ queryKey: ["admin-bookings"] });
       qc.invalidateQueries({ queryKey: ["bookings-all"] });
       console.log("[payNow] React Query cache updated and admin caches invalidated");
@@ -102,6 +142,7 @@ function Payment() {
       }
 
       toast.success("Payment successful");
+      console.log("NAVIGATING TO CONFIRMATION — bookingId:", bookingId);
       nav({ to: "/confirmation", search: { bookingId } as any });
     } catch (e: any) {
       console.error("[payNow] ERROR during payment flow:", e);
