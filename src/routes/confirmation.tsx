@@ -23,9 +23,12 @@ function Confirmation() {
   const { bookingId } = Route.useSearch();
   const [pdfLoading, setPdfLoading] = useState(false);
 
+  // staleTime: 0 — always fetch from DB on mount so we read the DB-committed
+  // payment_status="paid" rather than a stale pre-payment cache snapshot.
   const { data: booking } = useQuery({
     queryKey: ["booking", bookingId],
     enabled: !!bookingId,
+    staleTime: 0,
     queryFn: async () =>
       (await supabase.from("bookings").select("*, hotels(name), customers(*)").eq("id", bookingId!).maybeSingle()).data,
   });

@@ -128,10 +128,13 @@ function AdminBookings() {
   async function update(id: string, patch: Record<string, unknown>, msg: string) {
     setActionLoading(id);
     try {
+      console.log("[admin/bookings] BEFORE bookings.update — id:", id, "patch:", patch);
       const { error } = await supabase.from("bookings").update(patch).eq("id", id);
       if (error) {
+        console.error("[admin/bookings] AFTER bookings.update — ERROR:", error.message);
         toast.error(error.message);
       } else {
+        console.log("[admin/bookings] AFTER bookings.update — SUCCESS:", msg, "patch:", patch);
         toast.success(msg);
         qc.invalidateQueries({ queryKey: ["admin-bookings"] });
       }

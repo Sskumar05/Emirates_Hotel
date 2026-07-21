@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { WebsiteLayout } from "@/components/website/WebsiteLayout";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR, fmtDateTime, getDurationLabel, CATEGORY_LABELS } from "@/lib/hotel";
 import { Lock, CreditCard, ShieldCheck } from "lucide-react";
@@ -17,11 +17,15 @@ export const Route = createFileRoute("/payment")({
 function Payment() {
   const { bookingId } = Route.useSearch();
   const nav = useNavigate();
+  const qc = useQueryClient();
   const { sendConfirmation } = useSendEmail();
 
+  // staleTime: 0 ensures we always read the freshest booking data from DB,
+  // not a cached pre-payment snapshot.
   const { data: booking } = useQuery({
     queryKey: ["booking", bookingId],
     enabled: !!bookingId,
+    staleTime: 0,
     queryFn: async () => (await supabase.from("bookings").select("*, hotels(name), customers(*)").eq("id", bookingId!).maybeSingle()).data,
   });
 
@@ -31,29 +35,47 @@ function Payment() {
   async function payNow() {
     try {
       const payRef = `RZP_${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
-      
+
+      // ── STEP 1: Update booking — ONE atomic write: status + payment_status + payment_ref ──
+      console.log("[payNow] BEFORE bookings.update — bookingId:", bookingId, "patch:", { status: "confirmed", payment_status: "paid", payment_ref: payRef });
       const { error } = await supabase.from("bookings").update({
-        status: "confirmed", payment_status: "paid", payment_ref: payRef,
+        status: "confirmed",
+        payment_status: "paid",
+        payment_ref: payRef,
       }).eq("id", bookingId!);
       if (error) throw error;
-      
+      console.log("[payNow] AFTER bookings.update — SUCCESS. status=confirmed, payment_status=paid, payment_ref=", payRef);
+
+      // ── STEP 2: Create invoice record ─────────────────────────────────────────
+      console.log("[payNow] BEFORE invoices.insert — bookingId:", bookingId);
       const { error: invError } = await supabase.from("invoices").insert({
         booking_id: bookingId!, customer_id: (booking as any)?.customer_id,
         amount: (booking as any)?.total_amount ?? 0, status: "paid",
       });
       if (invError) throw invError;
+      console.log("[payNow] AFTER invoices.insert — SUCCESS");
 
+      // ── STEP 3: Fetch the authoritative updated booking from DB ───────────────
+      console.log("[payNow] Fetching updated booking from DB to verify payment_status...");
       const { data: updatedBooking, error: fetchError } = await supabase
         .from("bookings")
         .select("*, hotels(name), customers(*)")
         .eq("id", bookingId!)
         .maybeSingle();
-      
       if (fetchError || !updatedBooking) throw fetchError || new Error("Failed to fetch updated booking");
+      console.log("[payNow] Updated booking from DB — status:", updatedBooking.status, "| payment_status:", updatedBooking.payment_status, "| payment_ref:", updatedBooking.payment_ref);
 
+      // ── STEP 4: Push the confirmed/paid state into React Query cache ──────────
+      // This prevents the confirmation page from reading a stale "pending" snapshot.
+      qc.setQueryData(["booking", bookingId], updatedBooking);
+      // Invalidate admin caches so the Admin Dashboard reflects the latest data.
+      qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+      qc.invalidateQueries({ queryKey: ["bookings-all"] });
+      console.log("[payNow] React Query cache updated and admin caches invalidated");
+
+      // ── STEP 5: Send confirmation email (non-blocking) ────────────────────────
       const customer = (updatedBooking as any).customers;
       const hotel = (updatedBooking as any).hotels;
-
       if (customer?.email) {
         try {
           await sendConfirmation(customer.email, {
@@ -74,14 +96,17 @@ function Payment() {
             paymentStatus: updatedBooking.payment_status ?? "paid",
           });
         } catch (emailErr) {
-          console.error("Failed to send confirmation email:", emailErr);
-          // Do not throw; allow payment flow to continue
+          console.error("[payNow] Failed to send confirmation email (non-fatal):", emailErr);
+          // Do not throw — payment is already recorded in DB; email is best-effort.
         }
       }
 
       toast.success("Payment successful");
       nav({ to: "/confirmation", search: { bookingId } as any });
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      console.error("[payNow] ERROR during payment flow:", e);
+      toast.error(e.message);
+    }
   }
 
   return (
